@@ -1,0 +1,49 @@
+#!/bin/bash
+# Host Files Update
+/usr/local/sbin/HostFilesUpdate.sh
+
+# Update the Dashboard from GIT
+git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git pull origin master
+
+# Stop all the services...
+systemctl stop pistar-watchdog.service > /dev/null 2>&1
+systemctl stop mmdvmhost.service > /dev/null 2>&1
+systemctl stop dstarrepeater.service > /dev/null 2>&1
+sleep 2
+systemctl stop ircddbgateway.service > /dev/null 2>&1
+systemctl stop ysfgateway.service > /dev/null 2>&1
+systemctl stop ysfparrot.service > /dev/null 2>&1
+systemctl stop p25gateway.service > /dev/null 2>&1
+systemctl stop p25parrot.service > /dev/null 2>&1
+systemctl stop dmrgateway.service > /dev/null 2>&1
+systemctl stop timeserver.service > /dev/null 2>&1
+
+# Update the Binaries
+git --work-tree=/usr/local/bin --git-dir=/usr/local/bin/.git pull origin master
+
+# Update the Binaries (sbin)
+git --work-tree=/usr/local/sbin --git-dir=/usr/local/sbin/.git pull origin master
+
+# Purge the logs older than 2 days
+rm -f $(find /var/log/pi-star/*.log -type f -mtime +0 -print)
+
+# Start all the services...
+systemctl start ircddbgateway.service > /dev/null 2>&1
+systemctl start dmrgateway.service > /dev/null 2>&1
+systemctl start ysfgateway.service > /dev/null 2>&1
+systemctl start ysfparrot.service > /dev/null 2>&1
+systemctl start p25gateway.service > /dev/null 2>&1
+systemctl start p25parrot.service > /dev/null 2>&1
+systemctl start timeserver.service > /dev/null 2>&1
+systemctl start mmdvmhost.service > /dev/null 2>&1
+systemctl start dstarrepeater.service > /dev/null 2>&1
+systemctl start pistar-watchdog.service > /dev/null 2>&1
+
+# Fix nginx unit file
+if ! [ $(cat /lib/systemd/system/nginx.service | grep -o "mkdir") ]; then
+  sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
+	systemctl daemon-reload
+	systemctl restart nginx.service
+fi
+
+exit 0

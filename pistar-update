@@ -1,0 +1,99 @@
+#!/bin/bash
+#
+###############################################################################
+#                                                                             #
+#                        Pi-Star Auto Update Tool                             #
+#                                                                             #
+#    Version 2.6, Code, Design and Development by Andy Taylor (MW0MWZ).       #
+#                                                                             #
+#                     Make it simple to update the OS.                        #
+#                                                                             #
+###############################################################################
+#
+if [ "$(id -u)" != "0" ]; then
+  echo -e "You need to be root to run this command...\n"
+  exit 1
+fi
+
+main_function() {
+	# Make the disk writable
+	mount -o remount,rw /
+	mount -o remount,rw /boot
+
+	echo -e "Updating OS...\n"
+	apt-get update
+	apt-get upgrade -y
+	apt-get clean
+	echo "Done"
+	
+	echo "Checking nginx config"
+	if ! [ $(cat /lib/systemd/system/nginx.service | grep -o "mkdir") ]; then
+		sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
+		systemctl daemon-reload
+		systemctl restart nginx.service
+		echo "nginx config has been repaired - please re-run pistar-update"
+		exit 1
+	fi
+
+	echo "Stopping Services..."
+	systemctl stop dmrgateway.service > /dev/null 2>&1
+	systemctl stop mmdvmhost.service > /dev/null 2>&1 && sleep 2 > /dev/null 2>&1
+	systemctl stop dstarrepeater.service > /dev/null 2>&1
+	systemctl stop ircddbgateway.service > /dev/null 2>&1
+	systemctl stop ysfgateway.service > /dev/null 2>&1
+	systemctl stop p25gateway.service > /dev/null 2>&1
+	systemctl stop timeserver.service > /dev/null 2>&1
+	echo "Done"
+
+	echo "Updating DV Binaries..."
+	git --work-tree=/usr/local/bin --git-dir=/usr/local/bin/.git pull origin master
+	echo "Done"
+	
+	echo "Updating Pi-Star Binaries..."
+	git --work-tree=/usr/local/sbin --git-dir=/usr/local/sbin/.git update-index --assume-unchanged pistar-upnp.service
+	git --work-tree=/usr/local/sbin --git-dir=/usr/local/sbin/.git pull origin master
+	echo "Done"
+
+	echo "Updating Hostfiles..."
+	/usr/local/sbin/HostFilesUpdate.sh
+	echo "Done"
+
+	echo "Updating Dashboard..."
+	# Update the Dashboard from GIT
+	git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git pull origin master
+	echo "Done"
+
+	echo "Updating PiStar-Firewall..."
+	pistar-firewall > /dev/null 2>&1
+	echo "Done"
+
+	echo "Starting Services..."
+	systemctl start dmrgateway.service > /dev/null 2>&1
+	systemctl start dstarrepeater.service > /dev/null 2>&1
+	systemctl start ircddbgateway.service > /dev/null 2>&1
+	systemctl start ysfgateway.service > /dev/null 2>&1
+	systemctl start p25gateway.service > /dev/null 2>&1
+	systemctl start timeserver.service > /dev/null 2>&1
+	systemctl start dstarrepeater.service > /dev/null 2>&1
+	systemctl start mmdvmhost.service > /dev/null 2>&1
+	echo "Done"
+
+	echo "Updates complete, sleeping for a few seconds before making the disk Read-Only"
+	# Make the disk read-only
+	sleep 3
+	mount -o remount,ro /
+	mount -o remount,ro /boot
+	
+	# Tell the user we are done
+	echo "Finished"
+	}
+
+if [ -t 1 ]; then
+  # run via terminal, only output to screen
+  main_function
+else
+  # if not run via terminal, log everything into a log file
+  main_function 2>&1 >> /var/log/pi-star/pi-star_update.log
+fi
+
+exit 0
