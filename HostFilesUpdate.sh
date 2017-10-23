@@ -23,6 +23,7 @@ DExtraHOSTS=/usr/local/etc/DExtra_Hosts.txt
 DMRIDFILE=/usr/local/etc/DMRIds.dat
 DMRHOSTS=/usr/local/etc/DMR_Hosts.txt
 DPlusHOSTS=/usr/local/etc/DPlus_Hosts.txt
+GatewayHosts=/usr/local/etc/Gateway_Hosts.txt
 P25HOSTS=/usr/local/etc/P25Hosts.txt
 YSFHOSTS=/usr/local/etc/YSFHosts.txt
 
@@ -43,6 +44,7 @@ if [ ${FILEBACKUP} -ne 0 ]; then
 	cp ${DMRIDFILE} ${DMRIDFILE}.$(date +%Y%m%d)
 	cp ${DMRHOSTS} ${DMRHOSTS}.$(date +%Y%m%d)
 	cp ${DPlusHOSTS} ${DPlusHOSTS}.$(date +%Y%m%d)
+	cp ${GatewayHosts} ${GatewayHosts}.$(date +%Y%m%d)
 	cp ${P25HOSTS} ${P25HOSTS}.$(date +%Y%m%d)
 	cp ${YSFHOSTS} ${YSFHOSTS}.$(date +%Y%m%d)
 fi
@@ -54,6 +56,7 @@ ${DExtraHOSTS}
 ${DMRIDFILE}
 ${DMRHOSTS}
 ${DPlusHOSTS}
+${GatewayHosts}
 ${P25HOSTS}
 ${YSFHOSTS}"
 
@@ -75,10 +78,11 @@ curl --fail -o ${DCSHOSTS} -s http://www.pistar.uk/downloads/DCS_Hosts.txt
 curl --fail -o ${DMRHOSTS} -s http://www.pistar.uk/downloads/DMR_Hosts.txt
 curl --fail -o ${DPlusHOSTS} -s http://www.pistar.uk/downloads/DPlus_Hosts.txt
 curl --fail -o ${DExtraHOSTS} -s http://www.pistar.uk/downloads/DExtra_Hosts.txt
+curl --fail -o ${GatewayHosts} -s http://www.pistar.uk/downloads/USTrust_Hosts.txt
 curl --fail -o ${DMRIDFILE} -s http://www.pistar.uk/downloads/DMRIds.dat
 curl --fail -o ${P25HOSTS} -s http://www.pistar.uk/downloads/P25_Hosts.txt
 curl --fail -o ${YSFHOSTS} -s http://www.pistar.uk/downloads/YSF_Hosts.txt
-curl --fail -s http://www.pistar.uk/downloads/USTrust_Hosts.txt >> ${DExtraHOSTS}
+#curl --fail -s http://www.pistar.uk/downloads/USTrust_Hosts.txt >> ${DExtraHOSTS}
 
 # If there is a DMR Over-ride file, add it's contents to DMR_Hosts.txt
 if [ -f "/root/DMR_Hosts.txt" ]; then
